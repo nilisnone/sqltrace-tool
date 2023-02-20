@@ -4,7 +4,6 @@ go 1.19
 
 require (
 	github.com/caarlos0/env v3.5.0+incompatible
-	github.com/go-basic/ipv4 v1.0.0
 	github.com/joho/godotenv v1.5.1
 )
 

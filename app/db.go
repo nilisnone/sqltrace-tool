@@ -14,19 +14,12 @@ func initDB(dsn string) *sql.DB {
 		panic(fmt.Sprintf("无法设置数据库，配置: %s", err.Error()))
 	}
 	defer db.Close()
-	// rows, err := db.Query("explain FORMAT = JSON select runoob_title from runoob_tbl")
-	// if err != nil {
-	// 	logE("error %s", err)
-	// 	return
-	// }
-	// defer rows.Close()
-	// for rows.Next() {
-	// 	var s string
-	// 	err := rows.Scan(&s)
-	// 	if err != nil {
-	// 	}
-	// 	fmt.Println(s)
-	// }
+
+	records, err := explainSql(db, "select runoob_title from runoob_tbl")
+	if err != nil {
+		panic(err)
+	}
+	fmt.Printf("%v", records)
 
 	err = db.Ping()
 	if err != nil {
@@ -36,4 +29,50 @@ func initDB(dsn string) *sql.DB {
 	db.SetMaxOpenConns(5)
 	tools.LogI("设置最大数据库连接数: 5")
 	return db
+}
+
+func explainSql(db *sql.DB, sql string) (records []map[string]string, err error) {
+	rows, err := db.Query("explain " + sql)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	cols, err := rows.Columns()
+	if err != nil {
+		return nil, err
+	}
+	rc, err := scanRecords(cols, rows)
+	if err != nil {
+		return nil, err
+	}
+	return rc, err
+}
+
+// 解析记录集
+func scanRecords(cols []string, rows *sql.Rows) (records []map[string]string, err error) {
+	// init cols
+	vals := make([]sql.RawBytes, len(cols)) //sql.RawBytes存储每一单元的值，[]sql.RawBytes存储每行的值
+	dest := make([]interface{}, len(cols))  //dest为一行值，每个元素对应数据库行项的slice的指针
+	for i := 0; i < len(cols); i++ {
+		dest[i] = &vals[i]
+	}
+
+	// loop
+	for rows.Next() {
+		// scan row to dest
+		if err := rows.Scan(dest...); err != nil {
+			return nil, err
+		}
+
+		// row vals
+		row := map[string]string{}
+		for k, v := range vals {
+			sv := fmt.Sprintf("%s", v)
+			row[cols[k]] = sv
+		}
+		records = append(records, row)
+	}
+
+	return records, nil
 }

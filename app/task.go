@@ -3,7 +3,6 @@ package app
 import (
 	"bytes"
 	"database/sql"
-	"encoding/json"
 	"io/fs"
 	"os"
 	"path/filepath"
@@ -16,10 +15,11 @@ import (
 )
 
 type TaskList struct {
-	mu   sync.RWMutex
-	data map[string]*Task
-	pos  *Position
-	db   *sql.DB
+	mu     sync.RWMutex
+	data   map[string]*Task
+	pos    *Position
+	result *ResultMap
+	db     *sql.DB
 }
 
 func NewTaskList() *TaskList {
@@ -189,15 +189,13 @@ func extraceTaskFromFile(file string, fd *os.File, start int, taskList *TaskList
 				str = string(bytes.Trim([]byte(str), "\x00"))
 				// tools.LogD("file: %s, start: %d, end: %d, str: `%s`", file, st, next_pos, str)
 				st = next_pos
-				sql := &SqlLine{}
-				err = json.Unmarshal([]byte(str), sql)
-				if err != nil {
-					tools.LogE("json error : %s, file: %s, start: %d, end: %d, str: `%s`", err.Error(), file, st, next_pos, str)
-					taskList.pos.Set(file, next_pos)
-					break
+				traceSql, ok := newTraceSql(str)
+				if !ok {
+					tools.LogW("file: %s, start: %d, end: %d cannot found trace-sql", file, st, next_pos)
+					continue
 				}
-				tools.LogI("got sql: %v, app_uuid: %s, sql_uuid: %s", sql, sql.App_uuid, sql.Sql_uuid)
-				ParseSql(sql.Trace_sql)
+				tools.LogD("app_uuid: %s, sql_uuid: %s", traceSql.App_uuid, traceSql.Sql_uuid)
+				ParseSql(traceSql.Trace_sql)
 			}
 		case <-ts.C:
 			return
