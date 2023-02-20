@@ -17,12 +17,6 @@ type Position struct {
 	data map[string]int
 }
 
-func NewPostion() *Position {
-	return &Position{
-		data: make(map[string]int),
-	}
-}
-
 func (p *Position) Set(file string, pos int) {
 	p.mu.Lock()
 	defer p.mu.Unlock()

@@ -3,6 +3,7 @@ package app
 import (
 	"bytes"
 	"database/sql"
+	"fmt"
 	"io/fs"
 	"os"
 	"path/filepath"
@@ -25,7 +26,12 @@ type TaskList struct {
 func NewTaskList() *TaskList {
 	return &TaskList{
 		data: make(map[string]*Task),
-		pos:  NewPostion(),
+		pos: &Position{
+			data: make(map[string]int),
+		},
+		result: &ResultMap{
+			data: make(map[string]*SqlStatic),
+		},
 	}
 }
 
@@ -124,7 +130,7 @@ func watchNewLogFile(dir string, taskList *TaskList, callback func(string, *os.F
 						} else {
 							tools.LogI("新文件加入队列成功, file=%s", fullPath)
 							taskList.Set(fullPath, &Task{event.Name, fd})
-							go extraceTaskFromFile(fullPath, fd, 0, taskList)
+							go extraceTraceSqlFromFile(fullPath, fd, 0, taskList)
 						}
 					}
 				}
@@ -164,8 +170,8 @@ func watchNewLogFile(dir string, taskList *TaskList, callback func(string, *os.F
 	<-done
 }
 
-// extraceTaskFromFile 依次读取文件按行提取任务，每5分钟退出一次
-func extraceTaskFromFile(file string, fd *os.File, start int, taskList *TaskList) {
+// extraceTraceSqlFromFile 依次读取文件按行提取任务，每5分钟退出一次
+func extraceTraceSqlFromFile(file string, fd *os.File, start int, taskList *TaskList) {
 	t := time.NewTicker(time.Second)
 	ts := time.NewTimer(time.Second * 300)
 	defer func() {
@@ -187,15 +193,18 @@ func extraceTaskFromFile(file string, fd *os.File, start int, taskList *TaskList
 					break
 				}
 				str = string(bytes.Trim([]byte(str), "\x00"))
-				// tools.LogD("file: %s, start: %d, end: %d, str: `%s`", file, st, next_pos, str)
+				tools.LogD("file: %s, start: %d, end: %d, str: `%s`", file, st, next_pos, str)
 				st = next_pos
 				traceSql, ok := newTraceSql(str)
 				if !ok {
 					tools.LogW("file: %s, start: %d, end: %d cannot found trace-sql", file, st, next_pos)
+					taskList.pos.Set(file, next_pos)
 					continue
 				}
-				tools.LogD("app_uuid: %s, sql_uuid: %s", traceSql.App_uuid, traceSql.Sql_uuid)
-				ParseSql(traceSql.Trace_sql)
+				tools.LogI("app_uuid: %s, sql_uuid: %s", traceSql.App_uuid, traceSql.Sql_uuid)
+				tools.LogD("sql: %s", traceSql.Trace_sql)
+				taskList.pos.Set(file, next_pos)
+				parseSql(traceSql.Trace_sql, taskList)
 			}
 		case <-ts.C:
 			return
@@ -203,8 +212,42 @@ func extraceTaskFromFile(file string, fd *os.File, start int, taskList *TaskList
 	}
 }
 
-// ParseSql 解析SQL
-func ParseSql(sql string) {
+// parseSql 解析SQL
+func parseSql(sql string, taskList *TaskList) {
 	finger := query.Fingerprint(sql)
 	tools.LogI("finger is %s", finger)
+
+	_, ok := beforeExecSqlExplaining(sql, finger)
+	if !ok {
+		return
+	}
+	if ok = execSqlExplaining(sql, taskList); !ok {
+		return
+	}
+	afterExecSqlExplaining(sql, finger)
+}
+
+// beforeExecSqlExplaining 执行 explain 之前动作
+func beforeExecSqlExplaining(sql string, finger string) (rsql string, ok bool) {
+	return "", true
+}
+
+// execSqlExplaining 执行 explain
+func execSqlExplaining(sql string, taskList *TaskList) (ok bool) {
+	records, err := explainSql(taskList.db, sql)
+	if err != nil {
+		tools.LogE("查询失败: %s", err.Error())
+		return false
+	}
+	for _, record := range records {
+		for k, v := range record {
+			fmt.Printf("key[%s] value[%s]\n", k, v)
+		}
+	}
+	return true
+}
+
+// afterExecSqlExplaining 执行 explain 之后动作
+func afterExecSqlExplaining(sql string, finger string) {
+
 }

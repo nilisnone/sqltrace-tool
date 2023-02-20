@@ -4,7 +4,7 @@ import "sync"
 
 type ResultMap struct {
 	mu   sync.RWMutex
-	data map[string]SqlStatic
+	data map[string]*SqlStatic
 }
 
 type SqlStatic struct {
@@ -22,7 +22,7 @@ type SqlStatic struct {
 func (rm *ResultMap) Set(finger string, ss *SqlStatic) {
 	rm.mu.Lock()
 	defer rm.mu.Unlock()
-	rm.data[finger] = *ss
+	rm.data[finger] = ss
 }
 
 func (rm *ResultMap) Exist(finger string) bool {
@@ -30,6 +30,12 @@ func (rm *ResultMap) Exist(finger string) bool {
 	defer rm.mu.RUnlock()
 	_, ok := rm.data[finger]
 	return ok
+}
+
+func (rm *ResultMap) Get(finger string) *SqlStatic {
+	rm.mu.RLock()
+	defer rm.mu.RUnlock()
+	return rm.data[finger]
 }
 
 type SqlExplain struct {

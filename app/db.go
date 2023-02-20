@@ -13,13 +13,6 @@ func initDB(dsn string) *sql.DB {
 	if err != nil {
 		panic(fmt.Sprintf("无法设置数据库，配置: %s", err.Error()))
 	}
-	defer db.Close()
-
-	records, err := explainSql(db, "select runoob_title from runoob_tbl")
-	if err != nil {
-		panic(err)
-	}
-	fmt.Printf("%v", records)
 
 	err = db.Ping()
 	if err != nil {

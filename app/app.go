@@ -24,6 +24,7 @@ func NewApplication(config tools.Config) *Application {
 func (app *Application) Run() {
 	app.checkConfig()
 	app.setDB()
+	defer app.taskList.db.Close()
 
 	tools.LogI("开始初始化扫描文件起始行, 初始化文件 %s", app.config.InitPositionFile)
 	initPositionFile(app.config.InitPositionFile, app.taskList)
@@ -32,15 +33,15 @@ func (app *Application) Run() {
 	initTaskListFromLogFile(app.config.ScanDir, app.taskList)
 
 	tools.LogI("开始监控文件夹 %s 的新文件", app.config.ScanDir)
-	go watchNewLogFile(app.config.ScanDir, app.taskList, extraceTaskFromFile)
+	go watchNewLogFile(app.config.ScanDir, app.taskList, extraceTraceSqlFromFile)
 
 	tools.LogI("开始定时刷新扫描文件起始行，到初始化文件中 %s", app.config.InitPositionFile)
 	go refreshPositionFile(app.config.InitPositionFile, app.taskList)
 
-	app.startTask()
+	go app.startTask()
 
 	quit := make(chan os.Signal, 1)
-	signal.Notify(quit, syscall.SIGINT, syscall.SIGTERM)
+	signal.Notify(quit, syscall.SIGINT, syscall.SIGTERM, syscall.SIGQUIT)
 	c := <-quit
 	tools.LogI("接收到信号 %s[%d]", c.String(), c)
 	doRefreshPositionFile(app.config.InitPositionFile, app.taskList)
@@ -69,7 +70,7 @@ func (app *Application) startTask() {
 		for file, task := range app.taskList.GetAll() {
 			tools.LogI("file[%s] start task", file)
 			if app.taskList.pos.Exist(file) {
-				go extraceTaskFromFile(file, task.fd, app.taskList.pos.Get(file), app.taskList)
+				go extraceTraceSqlFromFile(file, task.fd, app.taskList.pos.Get(file), app.taskList)
 			}
 		}
 		t.Reset(time.Second * 300)
