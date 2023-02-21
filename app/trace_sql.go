@@ -11,6 +11,7 @@ type TraceSql struct {
 	Db_host           string  // SQL 运行的机器 IP
 	Run_ms            float32 // 执行时间 ms
 	Call_sql_position string  // SQL 所在代码位置
+	Biz_created_at    string  // SQL 执行时间 2022-12-08T17:32:41.12345
 }
 
 func newTraceSql(sql string) (traceSql *TraceSql, ok bool) {

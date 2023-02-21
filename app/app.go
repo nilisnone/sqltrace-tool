@@ -22,7 +22,7 @@ func NewApplication(config tools.Config) *Application {
 }
 
 func (app *Application) Run() {
-	app.checkConfig()
+	tools.CheckConfig()
 	app.setDB()
 	defer app.taskList.db.Close()
 
@@ -45,15 +45,6 @@ func (app *Application) Run() {
 	c := <-quit
 	tools.LogI("接收到信号 %s[%d]", c.String(), c)
 	doRefreshPositionFile(app.config.InitPositionFile, app.taskList)
-}
-
-func (app *Application) checkConfig() {
-	if len(app.config.ScanDir) < 1 {
-		panic("SCAN_DIR 不能为空")
-	}
-	if len(app.config.DbDSN) < 1 {
-		panic("DB_DSN 不能为空")
-	}
 }
 
 func (app *Application) setDB() {
