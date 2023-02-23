@@ -68,7 +68,7 @@ func (t *TaskList) Exist(file string) bool {
 func initTaskListFromLogFile(dir string, taskList *TaskList) {
 	err := filepath.Walk(dir, func(path string, info fs.FileInfo, err error) error {
 		if !info.IsDir() {
-			fd, err := os.OpenFile(path, os.O_RDONLY|os.O_APPEND, 0700)
+			fd, err := os.OpenFile(path, os.O_RDONLY, 0700)
 			if err != nil {
 				return err
 			}
@@ -117,7 +117,7 @@ func watchNewLogFile(dir string, taskList *TaskList, callback func(string, *os.F
 							tools.LogE("新建新文件夹监控事件失败 %s", err.Error())
 						}
 					} else {
-						fd, err := os.OpenFile(event.Name, os.O_RDONLY|os.O_APPEND, 0700)
+						fd, err := os.OpenFile(event.Name, os.O_RDONLY, 0700)
 						if err != nil {
 							tools.LogE("打开新文件失败 %s", err.Error())
 						} else {
