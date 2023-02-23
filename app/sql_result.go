@@ -132,6 +132,10 @@ func (ss *SqlStatistic) GlobalStatistics(traceSql *TraceSql, exist bool) {
 	if exist {
 		ss.Arise_total_times++ // 累计出现次数+1
 		ss.App_uuid_times[traceSql.App_uuid]++
+		//更新最大值 Duplicate_times
+		if ss.App_uuid_times[traceSql.App_uuid] > ss.Duplicate_times {
+			ss.Duplicate_times = ss.App_uuid_times[traceSql.App_uuid]
+		}
 		if !slices.Contains(ss.Appear_files, traceSql.Call_sql_position) {
 			ss.Appear_files = append(ss.Appear_files, traceSql.Call_sql_position)
 		}
