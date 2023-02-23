@@ -10,6 +10,8 @@ type Config struct {
 	ScanDir          string `env:"SCAN_DIR"`                                         //分析日志的文件路径
 	DbDSN            string `env:"DB_DSN"`                                           //数据库连接地址
 	ExplainInterval  int    `env:"EXPLAIN_TNTERVAL" envDefault:"120"`                //每个SQL指纹执行Explain的间隔
+	SinkDriver       string `env:"SINK_DRIVER" envDefault:"file"`
+	SinkFileDir      string `env:"SINK_FILE_DIR" envDefault:""` // 保存结果文件夹, 如果SinkDriver是file，默认为 SCAN_DIR
 }
 
 var (

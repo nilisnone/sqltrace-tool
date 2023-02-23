@@ -43,6 +43,10 @@ func (rm *ResultMap) SetNx(finger_md5 string, ss *SqlStatistic) bool {
 	return false
 }
 
+func (rm *ResultMap) GetAllWithNoLock() map[string]*SqlStatistic {
+	return rm.data
+}
+
 type SqlStatistic struct {
 	mu sync.RWMutex
 
@@ -127,11 +131,7 @@ func (ss *SqlStatistic) GlobalStatistics(traceSql *TraceSql, exist bool) {
 	// 如果存在
 	if exist {
 		ss.Arise_total_times++ // 累计出现次数+1
-		if _, ok := ss.App_uuid_times[traceSql.App_uuid]; ok {
-			ss.App_uuid_times[traceSql.App_uuid]++ // 重复次数+1
-		} else {
-			ss.App_uuid_times[traceSql.App_uuid] = 1
-		}
+		ss.App_uuid_times[traceSql.App_uuid]++
 		if !slices.Contains(ss.Appear_files, traceSql.Call_sql_position) {
 			ss.Appear_files = append(ss.Appear_files, traceSql.Call_sql_position)
 		}

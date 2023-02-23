@@ -61,7 +61,7 @@ func scanRecords(cols []string, rows *sql.Rows) (records []map[string]string, er
 		// row vals
 		row := map[string]string{}
 		for k, v := range vals {
-			sv := fmt.Sprintf("%s", v)
+			sv := string(v)
 			row[cols[k]] = sv
 		}
 		records = append(records, row)

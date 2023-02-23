@@ -19,6 +19,7 @@ type Task struct {
 // parseSql 解析SQL
 func parseSql(traceSql *TraceSql, taskList *TaskList) {
 	sqlStatistic, needExpain := beforeExecSqlExplaining(traceSql, taskList)
+	defer saveRealtimeResult(traceSql, sqlStatistic, taskList)
 	if !needExpain {
 		tools.LogD("finger_md5 = %s, exist and not need explain again", sqlStatistic.Finger_md5)
 		taskList.result.Set(sqlStatistic.Finger_md5, sqlStatistic)
@@ -72,4 +73,44 @@ func afterExecSqlExplaining(sqlStatistic *SqlStatistic, taskList *TaskList) {
 	tools.LogD("%s", string(j))
 
 	taskList.result.Set(sqlStatistic.Finger_md5, sqlStatistic)
+}
+
+type rt struct {
+	App_uuid  string // App 请求唯一值
+	Sql_uuid  string // SQL 唯一值
+	Trace_sql string // 不带参数绑定的 SQL
+
+	Finger     string // SQL 指纹
+	Finger_md5 string // SQL 指纹 md5
+
+	// Explain 信息
+	Explain_result    string // explain 的原始结果
+	Last_explain_time string // 最近 explain 的时间
+
+	// 分析信息
+	Is_all      bool // 是否全表扫描
+	Is_filesort bool // 是否用到文件排序
+	Is_temp     bool // 是否用到临时表
+
+}
+
+// saveRealtimeResult 保存实时分析结果到文件中
+func saveRealtimeResult(traceSql *TraceSql, sqlStatistic *SqlStatistic, taskList *TaskList) {
+	r := &rt{
+		App_uuid:  traceSql.App_uuid,
+		Sql_uuid:  traceSql.Sql_uuid,
+		Trace_sql: traceSql.Trace_sql,
+
+		Finger:     sqlStatistic.Finger,
+		Finger_md5: sqlStatistic.Finger_md5,
+
+		Explain_result:    sqlStatistic.Explain_result,
+		Last_explain_time: sqlStatistic.Last_explain_time,
+
+		Is_all:      sqlStatistic.Is_all,
+		Is_filesort: sqlStatistic.Is_filesort,
+		Is_temp:     sqlStatistic.Is_temp,
+	}
+	j, _ := json.Marshal(r)
+	rtLog(string(j))
 }

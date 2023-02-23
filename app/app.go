@@ -56,6 +56,9 @@ func (app *Application) startTask() {
 	tools.LogI("after 3s ... will start task")
 	t := time.NewTicker(time.Second * 3)
 	defer t.Stop()
+
+	go app.saveStatisticResult()
+
 	for {
 		<-t.C
 		for file, task := range app.taskList.GetAll() {
@@ -65,5 +68,16 @@ func (app *Application) startTask() {
 			}
 		}
 		t.Reset(time.Second * 300)
+	}
+}
+
+// saveStatisticResult 异步保存分析结果到文件中
+func (app *Application) saveStatisticResult() {
+	t := time.NewTimer(time.Second * 300)
+
+	for {
+		<-t.C
+		t.Reset(time.Second * 300)
+		stLog(app.taskList.result.GetAllWithNoLock())
 	}
 }
