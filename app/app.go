@@ -42,7 +42,7 @@ func (app *Application) Run() {
 	go refreshPositionFile(app.config.InitPositionFile, app.taskList)
 
 	go app.startTask()
-	go app.StartPyroscope()
+	go app.startPyroscope()
 
 	quit := make(chan os.Signal, 1)
 	signal.Notify(quit, syscall.SIGINT, syscall.SIGTERM, syscall.SIGQUIT)
@@ -86,7 +86,7 @@ func (app *Application) saveStatisticResult() {
 	}
 }
 
-func (app *Application) StartPyroscope() {
+func (app *Application) startPyroscope() {
 	if len(app.config.PyroscoeAddr) == 0 {
 		return
 	}
