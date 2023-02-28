@@ -12,6 +12,8 @@ type Config struct {
 	ExplainInterval  int    `env:"EXPLAIN_TNTERVAL" envDefault:"120"`                //每个SQL指纹执行Explain的间隔
 	SinkDriver       string `env:"SINK_DRIVER" envDefault:"file"`
 	SinkFileDir      string `env:"SINK_FILE_DIR" envDefault:""` // 保存结果文件夹, 如果SinkDriver是file，默认为 SCAN_DIR
+	PyroscoeAddr     string `env:"PYROSCOPE_ADDR" envDefault:""`
+	PyroscoeToken    string `env:"PYROSCOPE_TOKEN" envDefault:""`
 }
 
 var (
