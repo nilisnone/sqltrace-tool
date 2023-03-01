@@ -7,7 +7,11 @@ all: gotool build
 
 build:
 	@go mod tidy
-	GOOS=linux GOARCH=amd64 go build -ldflags "-s -w -X main.VERSION=${VERSION}" -o ${BINARY}
+	GOOS=linux GOARCH=amd64 go build -ldflags "-s -w -X main.VERSION=${VERSION}" -o ./bin/${BINARY}
+
+build-mac:
+	@go mod tidy
+	GOOS=darwin GOARCH=amd64 go build -ldflags "-s -w -X main.VERSION=${VERSION}" -o ./bin/${BINARY}
 
 run:
 	@go mod tidy
