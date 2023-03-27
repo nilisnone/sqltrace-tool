@@ -27,7 +27,11 @@ func NewApplication(config tools.Config) *Application {
 func (app *Application) Run() {
 	tools.CheckConfig()
 	app.setDB()
-	defer app.taskList.db.Close()
+	defer func() {
+		for _, db := range app.taskList.db {
+			db.DSN.Close()
+		}
+	}()
 
 	tools.LogI("开始初始化扫描文件起始行, 初始化文件 %s", app.config.InitPositionFile)
 	initPositionFile(app.config.InitPositionFile, app.taskList)
@@ -52,7 +56,13 @@ func (app *Application) Run() {
 }
 
 func (app *Application) setDB() {
-	app.taskList.db = initDB(app.config.DbDSN)
+	for alias, db := range app.config.DbDSNMap {
+		tools.LogI("alias=%s, db=%s", alias, db)
+		app.taskList.db[alias] = &DsnMap{
+			Driver: db["driver"],
+			DSN:    initDB(db["dsn"]),
+		}
+	}
 }
 
 // StartTask 开始任务

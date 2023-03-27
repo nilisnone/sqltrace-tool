@@ -57,13 +57,19 @@ func beforeExecSqlExplaining(traceSql *TraceSql, taskList *TaskList) (SqlStatist
 
 // execSqlExplaining 执行 explain
 func execSqlExplaining(traceSql *TraceSql, sqlStatistic *SqlStatistic, taskList *TaskList) (ok bool) {
-	records, err := explainSql(taskList.db, traceSql.Trace_sql)
+	db, ok := taskList.db[traceSql.Db_alias]
+	if !ok {
+		tools.LogW("%s 没有配置对应的 DB_DSN", traceSql.Db_alias)
+		return false
+	}
+	driver := GetExplainer(db.Driver)
+	records, err := driver.explainSql(db.DSN, traceSql.Trace_sql)
 	if err != nil {
 		tools.LogE("explain 失败: %s", err.Error())
 		return false
 	}
 	sqlStatistic.SetExplainResult(records)
-	sqlStatistic.IssueExplore(records)
+	driver.issueExplore(sqlStatistic, records)
 	return true
 }
 

@@ -2,7 +2,6 @@ package app
 
 import (
 	"encoding/json"
-	"strings"
 	"sync"
 	"time"
 
@@ -94,34 +93,6 @@ func (ss *SqlStatistic) SetExplainResult(records []map[string]string) {
 	ss.Explain_result = string(res)
 	ss.Last_explain_time = time.Now().Local().Format(time.RFC3339)
 	ss.Last_explain_timestap = time.Now().Unix()
-}
-
-// IssueExplore 发现 SQL 的问题
-func (ss *SqlStatistic) IssueExplore(records []map[string]string) {
-	isAll := false
-	isFileSort := false
-	isTemp := false
-	// Using where; Using temporary; Using filesort
-	for _, record := range records {
-		for k, v := range record {
-			if k == "type" && !isAll {
-				isAll = v == "ALL"
-			}
-			if k == "Extra" {
-				if !isFileSort {
-					isFileSort = strings.Contains(v, "Using filesort")
-				}
-				if !isTemp {
-					isTemp = strings.Contains(v, "Using temporary")
-				}
-			}
-		}
-	}
-	ss.mu.Lock()
-	defer ss.mu.Unlock()
-	ss.Is_all = isAll
-	ss.Is_filesort = isFileSort
-	ss.Is_temp = isTemp
 }
 
 // GlobalStatistics 全局统计信息

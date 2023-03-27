@@ -1,6 +1,8 @@
 package tools
 
 import (
+	"encoding/json"
+
 	"github.com/caarlos0/env"
 	"github.com/joho/godotenv"
 )
@@ -14,6 +16,7 @@ type Config struct {
 	SinkFileDir      string `env:"SINK_FILE_DIR" envDefault:""` // 保存结果文件夹, 如果SinkDriver是file，默认为 SCAN_DIR
 	PyroscoeAddr     string `env:"PYROSCOPE_ADDR" envDefault:""`
 	PyroscoeToken    string `env:"PYROSCOPE_TOKEN" envDefault:""`
+	DbDSNMap         map[string]map[string]string
 }
 
 var (
@@ -25,6 +28,19 @@ func init() {
 	_ = godotenv.Load(".sqltool.env")
 	_ = godotenv.Load("/etc/.sqltool.env")
 	env.Parse(config)
+	parseDSN(config)
+	if config.SinkDriver == "file" && len(config.SinkFileDir) < 1 {
+		config.SinkFileDir = config.ScanDir
+	}
+}
+
+func parseDSN(config *Config) {
+	// 解析 JSON 字符串
+	err := json.Unmarshal([]byte(config.DbDSN), &config.DbDSNMap)
+	if err != nil {
+		panic(err)
+	}
+	// fmt.Println(config.DbDSNMap)
 }
 
 func CheckConfig() {

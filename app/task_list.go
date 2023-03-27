@@ -7,6 +7,7 @@ import (
 	"os"
 	"path/filepath"
 	"sqltrace-go-tool/tools"
+	"strings"
 	"sync"
 	"time"
 
@@ -18,7 +19,12 @@ type TaskList struct {
 	data   map[string]*Task
 	pos    *Position
 	result *ResultMap
-	db     *sql.DB
+	db     map[string]*DsnMap // alias: {driver: mysql, dsn: *sql.DB}
+}
+
+type DsnMap struct {
+	Driver string
+	DSN    *sql.DB
 }
 
 func NewTaskList() *TaskList {
@@ -30,6 +36,7 @@ func NewTaskList() *TaskList {
 		result: &ResultMap{
 			data: make(map[string]*SqlStatistic),
 		},
+		db: make(map[string]*DsnMap),
 	}
 }
 
@@ -68,12 +75,16 @@ func (t *TaskList) Exist(file string) bool {
 func initTaskListFromLogFile(dir string, taskList *TaskList) {
 	err := filepath.Walk(dir, func(path string, info fs.FileInfo, err error) error {
 		if !info.IsDir() {
+			base, _ := filepath.Abs(dir)
+			fullPath := filepath.Join(base, info.Name())
+			if !strings.HasSuffix(fullPath, ".log") {
+				tools.LogI("fullpath=%s, %s", fullPath, " is not with .log suffix")
+				return nil
+			}
 			fd, err := os.OpenFile(path, os.O_RDONLY, 0700)
 			if err != nil {
 				return err
 			}
-			base, _ := filepath.Abs(dir)
-			fullPath := filepath.Join(base, info.Name())
 			taskList.Set(fullPath, &Task{fullPath, fd})
 			tools.LogD("初始化文件加入任务队列, file = %s", fullPath)
 		}
@@ -86,6 +97,7 @@ func initTaskListFromLogFile(dir string, taskList *TaskList) {
 
 // watchNewLogFile 监控 SCAN_DIR 里的新文件，加入到 task 中
 func watchNewLogFile(dir string, taskList *TaskList, callback func(string, *os.File, int, *TaskList)) {
+	time.Now().GoString()
 	watcher, err := fsnotify.NewWatcher()
 	if err != nil {
 		tools.LogE("监控文件错误 %s", err.Error())
@@ -117,6 +129,10 @@ func watchNewLogFile(dir string, taskList *TaskList, callback func(string, *os.F
 							tools.LogE("新建新文件夹监控事件失败 %s", err.Error())
 						}
 					} else {
+						if !strings.HasSuffix(fullPath, ".log") {
+							tools.LogI("path=%s,%s", fullPath, " is not with .log suffix")
+							return
+						}
 						fd, err := os.OpenFile(event.Name, os.O_RDONLY, 0700)
 						if err != nil {
 							tools.LogE("打开新文件失败 %s", err.Error())

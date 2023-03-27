@@ -9,16 +9,6 @@ import (
 	"time"
 )
 
-func init() {
-	config := tools.GetConfig()
-	if config.SinkDriver != "file" {
-		return
-	}
-	if len(config.SinkFileDir) < 1 {
-		config.SinkFileDir = config.ScanDir
-	}
-}
-
 var sinkFileRt *os.File
 var sinkFileRtW *bufio.Writer
 
