@@ -68,6 +68,7 @@ func stLog(ss map[string]*SqlStatistic) {
 	sf, err := newSinkFileSt()
 	if err != nil {
 		tools.LogE("写统计日志失败: %s", err.Error())
+		return
 	}
 	for _, s := range ss {
 		f, _ := json.Marshal(s)

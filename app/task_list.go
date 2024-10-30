@@ -74,6 +74,9 @@ func (t *TaskList) Exist(file string) bool {
 // initTaskListFromLogFile 初始化 SCAN_DIR 中的文件，加入到 task 中
 func initTaskListFromLogFile(dir string, taskList *TaskList) {
 	err := filepath.Walk(dir, func(path string, info fs.FileInfo, err error) error {
+		if err != nil {
+			return err
+		}
 		if !info.IsDir() {
 			base, _ := filepath.Abs(dir)
 			fullPath := filepath.Join(base, info.Name())
@@ -90,6 +93,7 @@ func initTaskListFromLogFile(dir string, taskList *TaskList) {
 		}
 		return nil
 	})
+
 	if err != nil {
 		tools.LogE("初始化读取文件夹{%s}失败 %s", dir, err.Error())
 	}

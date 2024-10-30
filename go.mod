@@ -1,6 +1,6 @@
 module sqltrace-go-tool
 
-go 1.19
+go 1.17
 
 require (
 	github.com/caarlos0/env v3.5.0+incompatible

@@ -6,6 +6,5 @@ import (
 )
 
 func main() {
-	app := app.NewApplication(tools.GetConfig())
-	app.Run()
+	app.NewApplication(tools.GetConfig()).Run()
 }
